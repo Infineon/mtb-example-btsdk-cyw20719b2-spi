@@ -54,8 +54,8 @@
  *
  * CLK     WICED_P38    D13
  * MISO    WICED_P01    D12
- * MOSI    WICED_P06    D8
- * CS      WICED_P02    D6
+ * MOSI    WICED_P04    D7
+ * CS      WICED_P07    D10
  * GND
  *
  */
@@ -74,6 +74,7 @@
 #include "wiced_timer.h"
 #include "wiced_rtos.h"
 #include "wiced_hal_adc.h"
+#include "wiced_thermistor.h"
 
 /******************************************************************************
  *                                Constants
@@ -85,7 +86,7 @@
 /* Unit ID denoting temperature is in Celsius scale */
 #define UNIT_ID                             (0x000B)
 
-#define SPI                                 (SPI2)
+#define SPI                                 (SPI1)
 enum
 {
     SEND_MANUFACTURER_ID    =   0x01,

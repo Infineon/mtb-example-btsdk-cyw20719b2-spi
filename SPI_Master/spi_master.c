@@ -55,8 +55,8 @@
  *
  * CLK     WICED_P38    D13
  * MISO    WICED_P01    D12
- * MOSI    WICED_P06    D8
- * CS      WICED_P02    D6
+ * MOSI    WICED_P04    D7
+ * CS      WICED_P07    D10
  * GND
  *
  */
@@ -107,8 +107,6 @@
  * temperature data is divided by 100*/
 #define NORM_FACTOR                           (100)
 
-/* SPI Chip Select CS pin */
-#define SPI_CS                                  WICED_P02
 
 /******************************************************************************
  *                                Structures
@@ -152,7 +150,7 @@ typedef enum
  *                                Variables Definitions
  ******************************************************************************/
 
-static wiced_thread_t       *spi_2;
+static wiced_thread_t       *spi_1;
 
 /******************************************************************************
  *                                Function Prototypes
@@ -238,16 +236,16 @@ wiced_result_t bt_cback( wiced_bt_management_evt_t event,
 
 void initialize_app( void )
 {
-	wiced_hal_pspi_init(SPI2,
+    wiced_hal_pspi_init(SPI1,
                         DEFAULT_FREQUENCY,
                         SPI_LSB_FIRST,
                         SPI_SS_ACTIVE_LOW,
                         SPI_MODE_0);
 
-    spi_2 = wiced_rtos_create_thread();
-    if ( WICED_SUCCESS == wiced_rtos_init_thread(spi_2,
+    spi_1 = wiced_rtos_create_thread();
+    if ( WICED_SUCCESS == wiced_rtos_init_thread(spi_1,
                                                  PRIORITY_MEDIUM,
-                                                 "SPI 2 instance",
+                                                 "SPI 1 instance",
                                                  spi_sensor_thread,
                                                  THREAD_STACK_MIN_SIZE,
                                                  NULL ) )
@@ -389,7 +387,7 @@ void spi_sensor_thread(uint32_t arg )
                data is interpreted correctly.*/
             curr_state = SENSOR_DETECT;
             num_retries = RESET_COUNT;
-            wiced_hal_pspi_reset(SPI2);
+            wiced_hal_pspi_reset(SPI1);
         }
         wiced_rtos_delay_milliseconds(SLEEP_TIMEOUT, ALLOW_THREAD_TO_SLEEP);
     }
@@ -411,12 +409,12 @@ void spi_sensor_thread(uint32_t arg )
 void spi_sensor_utility(data_packet *send_msg,data_packet *rec_msg)
 {
     /* Chip select is set to LOW to select the slave for SPI transactions*/
-    wiced_hal_gpio_set_pin_output(SPI_CS, GPIO_PIN_OUTPUT_LOW);
+    wiced_hal_gpio_set_pin_output(SPI1_CS, GPIO_PIN_OUTPUT_LOW);
 
     WICED_BT_TRACE("Sending data to slave\n\r");
 
     /* Sending command to slave*/
-    wiced_hal_pspi_tx_data(SPI2,
+    wiced_hal_pspi_tx_data(SPI1,
                            sizeof(*send_msg),
                            (uint8_t*)send_msg);
 
@@ -426,12 +424,12 @@ void spi_sensor_utility(data_packet *send_msg,data_packet *rec_msg)
     WICED_BT_TRACE("Receiving data from slave\n\r");
 
     /* Receving response from slave*/
-    wiced_hal_pspi_rx_data(SPI2,
+    wiced_hal_pspi_rx_data(SPI1,
                            sizeof(*rec_msg),
                            (uint8_t*)rec_msg);
 
     /* Chip select is set to HIGH to unselect the slave for SPI transactions*/
-    wiced_hal_gpio_set_pin_output(SPI_CS, GPIO_PIN_OUTPUT_HIGH);
+    wiced_hal_gpio_set_pin_output(SPI1_CS, GPIO_PIN_OUTPUT_HIGH);
 
     return;
 }

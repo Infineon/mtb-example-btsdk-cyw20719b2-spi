@@ -1,16 +1,28 @@
 ﻿# CE229103 SPI
 
-This code example includes two applications that demonstrate the operation of Serial Peripheral Interface (SPI) interface using the CYW20719B2 Bluetooth SoC and ModusToolbox™. The first application demonstrates the operation of SPI master – for collecting sensor data. The second application demonstrates the operation of an SPI slave used for providing sensor data to the first application, i.e. SPI master.
+This code example includes two applications that demonstrate the operation of Serial Peripheral Interface (SPI) using the CYW20719B2 Bluetooth SoC and ModusToolbox™. 
+
+This code example has two applications:
+
+1. **SPI Master**: This application is used for collecting the sensor data.
+2. **SPI Slave**: This application provides sensor data to the first application, i.e. SPI Master.
+
 
 # Requirements
-- **Tool**: [ModusToolbox IDE v 2.x](https://www.cypress.com/products/modustoolbox-software-environment)
+- [ModusToolbox® software](https://www.cypress.com/products/modustoolbox-software-environment) v2.2  
 
-- **Programming Language**: C
+    **Note:** This code example version requires ModusToolbox software version 2.2 or later and is not backward compatible with v2.1 or older versions. If you cannot move to ModusToolbox v2.2, use the latest compatible version of this example: [latest-v1.X](https://github.com/cypresssemiconductorco/mtb-example-btsdk-cyw20719b2-spi/tree/latest-v1.X).  
+- Board Support Package (BSP) minimum required version: 2.8.0  
+- Programming Language: C
+- Associated parts: [CYW20719B2](https://www.cypress.com/documentation/datasheets/cyw20719-enhanced-low-power-bredrble-bluetooth-50-soc)
 
-- **Associated Parts**: [CYW20719B2](https://community.cypress.com/docs/DOC-17736)
+## Supported Toolchains (make variable 'TOOLCHAIN')
 
-# Supported Kits
-[CYW920719B2Q40EVB-01 Evaluation kit](https://community.cypress.com/docs/DOC-17736)
+- GNU Arm® Embedded Compiler v9.3.1 (GCC_ARM) - Default value of `TOOLCHAIN`
+
+## Supported Kits (make variable 'TARGET')
+
+- [CYW920719B2Q40EVB-01 Evaluation kit](https://community.cypress.com/docs/DOC-17736)
 
 # Hardware Setup
 These applications run on two separate kits. Both of them use the kit's default configuration. [Figure 1](#figure-1-block-diagram) shows the block diagram depicting the connections between different blocks of two evaluation boards.
@@ -25,12 +37,10 @@ Table 1. Hardware Connections
 | -------- | --------- | ----- | ---- | --------- | ----- | ---- |
 | CLK      | WICED_P38 | J3.5  | D13  | WICED_P38 | J3.5  | D13  |
 | MISO     | WICED_P01 | J3.6  | D12  | WICED_P01 | J3.6  | D12  |
-| MOSI     | WICED_P06 | J3.10 | D8   | WICED_P06 | J3.10 | D8   |
-| CS       | WICED_P02 | J4.2  | D6  | WICED_P02 | J4.2  | D6  |
+| MOSI     | WICED_P04 | J4.1 | D7   | WICED_P04 | J4.1 | D7   |
+| CS       | WICED_P07 | J3.8  | D10  | WICED_P07| J3.8  | D10  |
 | GND      | GND       | J3.4  | GND  | GND       | J3.4  | GND  |
 
-### **Note**: 
-The device configurator currently requires all 4 pins namely MISO, MOSI, CLK and CS while configuring SPI. The CS pin configured via device configurator is handled by SPI block internally and the application does not get to control it. If application control for CS is required or you want to select between multiple slaves, you will have to configure the pin/pins as GPIO and control it from the application. This application shows how to do the same. The trade off here is that the pin which you supplied as CS in device configurator will be wasted. This is applicable for SPI Master and will be fixed soon.
 
 # Software Setup
 Install a terminal emulator if you don't have one. Instructions in this document uses [TeraTerm](https://ttssh2.osdn.jp/index.html.en)
@@ -39,83 +49,95 @@ This example requires no additional software or tools.
 
 # Using the Code Example
 
-## In ModusToolbox IDE
+## In Eclipse IDE for ModusToolbox:
 
-1. Make the hardware connections as defined in Table 1 between two boards.
-2. Install ModusToolbox™ 2.x.
-3. In the ModusToolbox™ IDE, click the **New Application** link in the Quick Panel (or, use **File > New > ModusToolbox IDE Application**).
-4. Pick your board for BTSDK.
-5. First select **wiced\_btsdk**. This project contains the SDK. It is used by all BTSDK applications. You will need to create this project just once in the working directory (i.e. Eclipse workspace).
+1. Click the **New Application** link in the **Quick Panel** (or, use **File** > **New** > **ModusToolbox Application**). This launches the [Project Creator](http://www.cypress.com/ModusToolboxProjectCreator) tool.
 
-   *Note: Do not change the name of this project. All BTSDK apps use this project name in application makefiles.*
+2. Pick a kit supported by the code example from the list shown in the **Project Creator - Choose Board Support Package (BSP)** dialog.
 
-6. After the 'wiced\_btsdk' project is created, click the **New Application** link again, and select the board and click *next*.
-7. Select **SPI** application and click **next**. Click on **finish** to create the application. Two apps are created in the workspace. One is SPI_Master and another is SPI_Slave.
-8. Select the **SPI_Master** application in the IDE. In the Quick Panel, select **Build** to build the application.
-9. Two boards are required. To program the first board (download the application), select **Program** in the Quick Panel. Unplug the board.
-10. Next, select **SPI_Slave** application and in the Quick Panel, select **Build** to build the application.
-11. Plug in another board and select **Program** in the Quick Panel. After successfully programming the second app, plug in the first board which has SPI_master app running.
-   
-## In Command-line Interface (CLI)
+   When you select a supported kit, the example is reconfigured automatically to work with the kit. To work with a different supported kit later, use the [Library Manager](https://www.cypress.com/ModusToolboxLibraryManager) to choose the BSP for the supported kit and deselect the other BSPs. Keep only the required BSP in your application. You can use the Library Manager to select or update the BSP and firmware libraries used in this application. To access the Library Manager, click the link from the Quick Panel. 
 
-1. Install ModusToolbox™ 2.x.
-2. On Windows, use Cygwin from \ModusToolbox\tools_2.x\modus-shell\Cygwin.bat to build apps.
-3. git clone `wiced_btsdk` repo first. As mentioned earlier, this project contains the SDK used by all apps. You will need to create this project just once in the working directory. For example:
-   > git clone https://github.com/cypresssemiconductorco/wiced_btsdk
-4. git clone the app repo mtb-example-btsdk-cyw20719b2-spi. The application repo directory should be at the same folder level as 'wiced_btsdk'. For example:
-   > git clone https://github.com/cypresssemiconductorco/mtb-example-btsdk-cyw20719b2-spi
+   You can also just start the application creation process again and select a different kit.
 
-5. The `wiced_btsdk` repo contains references to other repos. To download all the required collateral, `cd` to root folder and use `make getlibs`.
-   ```
-   > cd wiced_btsdk
-   > make getlibs
-   ```
-6. In this example, there are two apps as already mentioned. One for SPI master and another for SPI slave. First navigate into SPI master app and call `make build`:
-   ```
-   > cd ../mtb-example-btsdk-cyw20719b2-spi/SPI_Master
-   > make build
-   ```
-7. Connect the first board. To program (download to) the board, call `make qprogram`:
-   ```
-   > make qprogram
-   ```
-   Unplug the board.
+   If you want to use the application for a kit not listed here, you may need to update the source files. If the kit does not have the required resources, the application may not work.
 
-8. Next come out of SPI master app and navigate to SPI slave app path:
-   ```
-   > cd ../SPI_Slave
-   ```
-9. Build the app:
-   ```
-   > make build
-   ```
+3. In the **Project Creator - Select Application** dialog, choose the example by enabling the checkbox.
 
-10. Connect second board and program it:
-    ```
-    > make qprogram
-    ```
-   After successfully programming the second app, plug in the first board.
+4. Optionally, change the suggested **New Application Name**.
 
-11. To build and program (download to) the board, call `make program` from respective app paths:
-    ```
-    > make program
-    ```
+5. Enter the local path in the **Application(s) Root Path** field to indicate where the application needs to be created. 
 
-   *Note: `make program` = `make build` + `make qprogram`*
+   Applications that can share libraries can be placed in the same root path.
+
+6. Click **Create** to complete the application creation process.
+
+For more details, see the [Eclipse IDE for ModusToolbox User Guide](https://www.cypress.com/MTBEclipseIDEUserGuide) (locally available at *{ModusToolbox install directory}/ide_{version}/docs/mt_ide_user_guide.pdf*).
+
+    **Note**: Both the SPI Master and SPI Slave applications are created for the same kit that you have selected in Step 2.
+
+## In Command-line Interface (CLI):
+
+ModusToolbox provides the Project Creator as both a GUI tool and a command line tool to easily create one or more ModusToolbox applications. See the "Project Creator Tools" section of the [ModusToolbox User Guide](https://www.cypress.com/ModusToolboxUserGuide) for more details.
+
+Alternatively, you can manually create the application using the following steps.
+
+1. Download and unzip this repository onto your local machine, or clone the repository.
+
+2. Open a CLI terminal and navigate to the application folder(SPI_Master or SPI_Slave).
+
+   On Linux and macOS, you can use any terminal application. On Windows, open the **modus-shell** app from the Start menu.
+
+    **Note:** The cloned application contains a default BSP file (*TARGET_xxx.mtb*) in the *deps* folder. Use the [Library Manager](https://www.cypress.com/ModusToolboxLibraryManager) (`make modlibs` command) to select and download a different BSP file, if required and deselect the other BSPs. Keep only the required BSP in your application. If the selected kit does not have the required resources or is not [supported](#supported-kits-make-variable-target), the application may not work. 
+
+3. Import the required libraries by executing the `make getlibs` command.
+
+Various CLI tools include a `-h` option that prints help information to the terminal screen about that tool. For more details, see the [ModusToolbox User Guide](https://www.cypress.com/ModusToolboxUserGuide) (locally available at *{ModusToolbox install directory}/docs_{version}/mtb_user_guide.pdf*).
+
+## In Third-party IDEs:
+
+1. Follow the instructions from the [CLI](#in-command-line-interface-cli) section to create the application, and import the libraries using the `make getlibs` command.
+
+2. Export the application to a supported IDE using the `make <ide>` command. 
+
+    For a list of supported IDEs and more details, see the "Exporting to IDEs" section of the [ModusToolbox User Guide](https://www.cypress.com/ModusToolboxUserGuide) (locally available at *{ModusToolbox install directory}/docs_{version}/mtb_user_guide.pdf*.
+
+3. Follow the instructions displayed in the terminal to create or import the application as an IDE project.
 
 
 # Operation
-1. Connect two boards to your PC using the provided USB cable. Note down the port enumerations for each device in **Device Manager** > **Ports** (**COM & LPT**) (Windows only). The enumeration with a smaller number is the **WICED HCI UART port** and the other is **WICED Peripheral UART port**.
 
-2. Open a terminal program and select the **WICED Peripheral UART** port for each board. Set the serial port parameters to 8N1 and 115200 baud. We need two windows of serial terminal to view messages from SPI master and SPI slave.
+##	Using Two BT SoC Boards:
 
-3. Program one board with SPI master example and another with SPI slave example.
+1. Connect one of the two boards to your PC using the provided USB cable through the USB connector.
+
+2. Open a terminal program and select the WICED PUART COM port. Set the serial port parameters to 8N1 and 115200 baud. 
+
+3. Program the board with the *SPI_master* application.
+
+    - **Using Eclipse IDE for ModusToolbox:**
+
+      1. Select the application project in the Project Explorer.
+
+      2. In the **Quick Panel**, scroll down, and click **\<Application Name> Program (KitProg3)**.
+
+   - **Using CLI:**
+
+     From the terminal, execute the `make program` command to build and program the application using the default toolchain to the default target. You can specify a target and toolchain manually:
+      ```
+      make program TARGET=<BSP> TOOLCHAIN=<toolchain>
+      ```
+
+      Example:
+      ```
+      make program TARGET=CYW920719B2Q40EVB-01 TOOLCHAIN=GCC_ARM
+      ```
+4. After programming is successful, unplug first board and connect the second board to your PC. Follow the same procedure as mentioned above for *SPI_Slave* application.
 
    **Note**: If the download fails, it is possible that a previously loaded application is preventing programming. For example, application might use a custom baud rate that the download process does not detect or it might be in a low power mode. In that case, it may be necessary to put the board in recovery mode, and then try the programming operation again from the IDE. To enter recovery mode, first, press and hold the Recover button (SW1), then press the Reset button (SW2), release the Reset button (SW2), and then release the Recover button (SW1).
 
-4. After programming, applications start automatically.
+5. After programming, applications start automatically.
 
-5. The master and slave serial terminal window display the received SPI command and the accompanying response on the terminal window, as shown in [Figure 2](#serial-terminal-output-of-spi-master) and [Figure 3](#serial-terminal-output-of-spi-slave).
+6. The master and slave serial terminal window display the received SPI command and the accompanying response on the terminal window, as shown in [Figure 2](#serial-terminal-output-of-spi-master) and [Figure 3](#serial-terminal-output-of-spi-slave).
 
    Figure 2. Serial Terminal Output of SPI master
 
@@ -132,7 +154,7 @@ This example requires no additional software or tools.
 
 This section describes the details of the implementation of the SPI Master.
 
-On startup, the application sets up the UART and then starts the Bluetooth stack in `application_start()`. Once the stack is started (`BTM_ENABLED_EVT`), it calls the `initialize_app()` function, which handles the remaining functionality. Note that the Bluetooth stack is running; since Bluetooth is not used in this application, it does not do anything once the stack is started. The `initialize_app()` function initializes both the SPI interfaces, RTC, GPIO and a thread to read SPI sensor.
+On startup, the application sets up the UART and then starts the Bluetooth stack in `application_start()`. Once the stack is started (`BTM_ENABLED_EVT`), it calls the `initialize_app()` function, which handles the remaining functionality. Note that the Bluetooth stack is running; since Bluetooth is not used in this application, it does not do anything once the stack is started. The `initialize_app()` function initializes the SPI interface, RTC, GPIO and a thread to read SPI sensor.
 
 Following is the description of the variables used:
 
@@ -203,26 +225,29 @@ The application level source files for “spi_slave” are listed in [Table 3](#
 | -------------------------------------------- | ------------------------------------------------------------ |
 | *spi_slave.c*                     | Contains the `application_start()` function which is the entry point for execution of the user application code after device startup. |
 
-## Resources and Settings
-This section explains the ModusToolbox resources and their configuration as used in this code example. Note that all the configuration explained in this section has already been done in the code example. 
-The ModusToolbox IDE stores the configuration settings of the application in the *design.modus* file. This file is used by the dveice configurators, which generate the configuration firmware. It is present in the respective kit BSP folder in *wiced_btsdk* project. For example for CYW920719B2Q40EVB-01 the path is *<workspace_path>/wiced_btsdk/dev-kit/bsp/TARGET_CYW920719B2Q40EVB-01/COMPONENT_bsp_design_modus/design.modus*.
 
+# Resources and Settings
+This section explains the ModusToolbox resources and their configuration as used in this code example. Note that all the configuration explained in this section has already been done in the code example. The ModusToolbox IDE stores the configuration settings of the application in the *design.modus* file. This file is used by the graphical configurators, which generate the configuration firmware. This firmware is stored in the application’s *GeneratedSource* folder.
 
+* **Device Configurator** The Device Configurator is used to enable/configure the peripherals and the pins used in the application. See the
+[Device Configurator Guide](https://www.cypress.com/ModusToolboxDeviceConfig).
 
-### Device Configurator 
-The Device Configurator is used to enable/configure the peripherals and the pins used in the application. See the [Device Configurator Guide](https://www.cypress.com/file/492971/download).
+* **Bluetooth Configurator:** The Bluetooth Configurator is used for generating/modifying the BLE GATT database. See the
+[Bluetooth Configurator Guide](https://www.cypress.com/ModusToolboxBLEConfig).
 
-
-### Bluetooth Configurator: 
-The Bluetooth Configurator is used for generating/modifying the BLE GATT database. See the [Bluetooth Configurator Guide](https://www.cypress.com/file/492891/download).
 
 ## Related Resources
 
-| **Tool Documentation**                                       |                                                              |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [ModusToolbox IDE](http://www.cypress.com/modustoolbox)      | The Cypress IDE for IoT designers                 |
-| **Device Information**                                       |                                                              |
-| [CYW20719B2 Product guide](https://community.cypress.com/docs/DOC-17736) | Documentation related to CYW20719B2 and CYW920719B2Q40EVB-01 Evaluation kit |
+| Application Notes                                            |                                                              |
+| :----------------------------------------------------------- | :----------------------------------------------------------- |
+|**Code Examples**| 
+|[Code Example for ModusToolbox](https://github.com/cypresssemiconductorco/Code-Examples-for-ModusToolbox-Software)|
+|**Device Documentation**|
+|[CYW20719 Device Datasheet](https://www.cypress.com/documentation/datasheets/cyw20719-enhanced-low-power-bredrble-bluetooth-50-soc)|
+|**Development Kits**|
+|[CYW920719B2Q40EVB-01 Evaluation kit](https://community.cypress.com/docs/DOC-17736)|
+|**Tools**|
+| [ModusToolbox](https://www.cypress.com/modustoolbox)     | The Cypress Development system for IoT engineers            |            |
 
 ### Other Resources
 
@@ -230,17 +255,17 @@ Cypress provides a wealth of data at [www.cypress.com](http://www.cypress.com) t
 
 ## Document History
 
-Document Title: *CE229103* – *SPI*
+Document Title: *CE229103 – SPI*
 
 | Version | Description of Change |
 | ------- | --------------------- |
 | 1.0.0   | New code example      |
-
+| 2.0.0   | Major update to support ModusToolbox software v2.2 <br> This version is not backward compatible with ModusToolbox software v2.1  |
 ------
 
 All other trademarks or registered trademarks referenced herein are the property of their respective owners.
 
-![Banner](./images/banner.png)
+![Banner](./images/ifx-cy-banner.png)
 
 ------
 
