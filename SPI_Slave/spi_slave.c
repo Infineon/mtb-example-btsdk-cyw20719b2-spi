@@ -1,37 +1,38 @@
-/*
- * Copyright 2020, Cypress Semiconductor Corporation or a subsidiary of
- * Cypress Semiconductor Corporation. All Rights Reserved.
- *
- * This software, including source code, documentation and related
- * materials ("Software"), is owned by Cypress Semiconductor Corporation
- * or one of its subsidiaries ("Cypress") and is protected by and subject to
- * worldwide patent protection (United States and foreign),
- * United States copyright laws and international treaty provisions.
- * Therefore, you may use this Software only as provided in the license
- * agreement accompanying the software package from which you
- * obtained this Software ("EULA").
- * If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
- * non-transferable license to copy, modify, and compile the Software
- * source code solely for use in connection with Cypress's
- * integrated circuit products. Any reproduction, modification, translation,
- * compilation, or representation of this Software except as specified
- * above is prohibited without the express written permission of Cypress.
- *
- * Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
- * reserves the right to make changes to the Software without notice. Cypress
- * does not assume any liability arising out of the application or use of the
- * Software or any product or circuit described in the Software. Cypress does
- * not authorize its products for use in any products where a malfunction or
- * failure of the Cypress product may reasonably be expected to result in
- * significant property damage, injury or death ("High Risk Product"). By
- * including Cypress's product in a High Risk Product, the manufacturer
- * of such system or application assumes all risk of such use and in doing
- * so agrees to indemnify Cypress against all liability.
- */
+/*******************************************************************************
+* Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
+*
+* This software, including source code, documentation and related
+* materials ("Software") is owned by Cypress Semiconductor Corporation
+* or one of its affiliates ("Cypress") and is protected by and subject to
+* worldwide patent protection (United States and foreign),
+* United States copyright laws and international treaty provisions.
+* Therefore, you may use this Software only as provided in the license
+* agreement accompanying the software package from which you
+* obtained this Software ("EULA").
+* If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
+* non-transferable license to copy, modify, and compile the Software
+* source code solely for use in connection with Cypress's
+* integrated circuit products.  Any reproduction, modification, translation,
+* compilation, or representation of this Software except as specified
+* above is prohibited without the express written permission of Cypress.
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
+* reserves the right to make changes to the Software without notice. Cypress
+* does not assume any liability arising out of the application or use of the
+* Software or any product or circuit described in the Software. Cypress does
+* not authorize its products for use in any products where a malfunction or
+* failure of the Cypress product may reasonably be expected to result in
+* significant property damage, injury or death ("High Risk Product"). By
+* including Cypress's product in a High Risk Product, the manufacturer
+* of such system or application assumes all risk of such use and in doing
+* so agrees to indemnify Cypress against all liability.
+******************************************************************************/
 
-/** @file spi_slave.c
+/*******************************************************************************
+ * @file spi_slave.c
  *
  * @brief 
  * sample application for SPI slave
@@ -54,30 +55,31 @@
  *
  * CLK     WICED_P38    D13
  * MISO    WICED_P01    D12
- * MOSI    WICED_P04    D7
- * CS      WICED_P07    D10
+ * MOSI    WICED_P06    D08
+ * CS      WICED_P02    D06
  * GND
- *
- */
+ ******************************************************************************/
 
 /******************************************************************************
  *                                Includes
  ******************************************************************************/
+
 #include "sparcommon.h"
 #include "wiced_bt_dev.h"
 #include "wiced_bt_stack.h"
 #include "wiced_bt_trace.h"
 #include "wiced_hal_gpio.h"
 #include "wiced_platform.h"
+#include "wiced_thermistor.h"
 #include "wiced_hal_pspi.h"
 #include "wiced_hal_puart.h"
+#include "wiced.h"
 #include "wiced_timer.h"
 #include "wiced_rtos.h"
 #include "wiced_hal_adc.h"
-#include "wiced_thermistor.h"
 
 /******************************************************************************
- *                                Constants
+ *                                Macros
  ******************************************************************************/
 
 /* Manufacturer ID denoting Cypress Semiconductor */
@@ -86,7 +88,7 @@
 /* Unit ID denoting temperature is in Celsius scale */
 #define UNIT_ID                             (0x000B)
 
-#define SPI                                 (SPI1)
+#define SPI                                 SPI1
 enum
 {
     SEND_MANUFACTURER_ID    =   0x01,
@@ -99,6 +101,7 @@ enum
 #define NORM_FACTOR                         (100)
 #define MAX_RETRIES                         (25)
 #define RESET_COUNT                         (0)
+
 /******************************************************************************
  *                                Structures
  ******************************************************************************/
@@ -122,14 +125,19 @@ static int16_t      get_ambient_temperature(void);
 
 extern void         thermistor_init(void);
 
-extern int16_t      thermistor_read(void);
+extern int16_t      thermistor_read(thermistor_cfg_t *p_thermistor_cfg);
+
+/******************************************************************************
+ *                          Variables Definitions
+ ******************************************************************************/
+thermistor_cfg_t  thermistor_cfg;    // configuration structure for thermistor
 
 /******************************************************************************
  *                                Function Definitions
  ******************************************************************************/
-/**
- Function name:
- application_start
+
+/*******************************************************************************
+ Function name:  application_start
 
  Function Description:
  @brief    Entry point to the application.
@@ -140,31 +148,29 @@ extern int16_t      thermistor_read(void);
  @param  void
 
  @return void
- */
+ ******************************************************************************/
 
-void application_start(void)
+APPLICATION_START()
 {
     wiced_set_debug_uart(WICED_ROUTE_DEBUG_TO_PUART);
     if(WICED_BT_SUCCESS != wiced_bt_stack_init( bt_cback, NULL, NULL))
     {
-        WICED_BT_TRACE("BT stack initialization failed \n\r");
+        WICED_BT_TRACE("Bluetooth LE stack initialization failed \n\r");
     }
 }
 
-/**
- Function name:
- wiced_result_t bt_cback(wiced_bt_management_evt_t event,
-*                                  wiced_bt_management_evt_data_t *p_event_data)
+/*******************************************************************************
+ Function name:  wiced_result_t bt_cback
 
  Function Description:
  @brief     This is a BlueTooth management event handler function to receive
-            events from BLE stack and process as per the application.
+            events from Bluetooth LE stack and process as per the application.
 
- @param  event          BLE event code of one byte length
- @param  *p_event_data  Pointer to BLE management event structures
+ @param  event          Bluetooth LE event code of one byte length
+ @param  *p_event_data  Pointer to Bluetooth LE management event structures
 
  @return wiced_result_t  Error code from WICED_RESULT_LIST or BT_RESULT_LIST
- */
+ ******************************************************************************/
 
 wiced_result_t bt_cback(wiced_bt_management_evt_t event,
                          wiced_bt_management_evt_data_t *p_event_data)
@@ -176,7 +182,10 @@ wiced_result_t bt_cback(wiced_bt_management_evt_t event,
     /* BlueTooth stack enabled */
     case BTM_ENABLED_EVT:
         WICED_BT_TRACE("Sample SPI Slave Application\n\r");
+        // Initialize thermistor
+        thermistor_cfg.high_pin = ADC_INPUT_P10;
         thermistor_init();
+        WICED_BT_TRACE("Thermistor initialization done!\n");
         initialize_app();
         break;
 
@@ -186,9 +195,8 @@ wiced_result_t bt_cback(wiced_bt_management_evt_t event,
     return result;
 }
 
-/**
- Function name:
- initialize_app
+/*******************************************************************************
+ Function name: initialize_app
 
  Function Description:
  @brief    This functions initializes the SPI Slave
@@ -196,7 +204,7 @@ wiced_result_t bt_cback(wiced_bt_management_evt_t event,
  @param void
 
  @return void
- */
+ ******************************************************************************/
 void initialize_app(void)
 {
     data_packet     send_data;
@@ -316,9 +324,8 @@ void initialize_app(void)
     }
 }
 
-/**
- Function name:
- get_ambient_temperature
+/*******************************************************************************
+ Function name:  get_ambient_temperature
 
  Function Description:
  @brief    Obtains ambient temperature from the thermistor.
@@ -326,7 +333,7 @@ void initialize_app(void)
  @param  void
 
  @return int16_t         Temperature reading from the thermistor.
- */
+ ******************************************************************************/
 
 static int16_t get_ambient_temperature(void)
 {
@@ -334,7 +341,7 @@ static int16_t get_ambient_temperature(void)
     /*
      * Temperature values might vary to +/-2 degree Celsius
      */
-    temperature = thermistor_read();
+    temperature = thermistor_read(&thermistor_cfg);
     WICED_BT_TRACE("Temperature (in degree Celsius) \t\t%d.%02d \n\r",
                   (temperature / NORM_FACTOR),
                   ABS(temperature % NORM_FACTOR));

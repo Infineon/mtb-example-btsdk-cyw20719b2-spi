@@ -1,37 +1,38 @@
-/*
- * Copyright 2020, Cypress Semiconductor Corporation or a subsidiary of
- * Cypress Semiconductor Corporation. All Rights Reserved.
- *
- * This software, including source code, documentation and related
- * materials ("Software"), is owned by Cypress Semiconductor Corporation
- * or one of its subsidiaries ("Cypress") and is protected by and subject to
- * worldwide patent protection (United States and foreign),
- * United States copyright laws and international treaty provisions.
- * Therefore, you may use this Software only as provided in the license
- * agreement accompanying the software package from which you
- * obtained this Software ("EULA").
- * If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
- * non-transferable license to copy, modify, and compile the Software
- * source code solely for use in connection with Cypress's
- * integrated circuit products. Any reproduction, modification, translation,
- * compilation, or representation of this Software except as specified
- * above is prohibited without the express written permission of Cypress.
- *
- * Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
- * reserves the right to make changes to the Software without notice. Cypress
- * does not assume any liability arising out of the application or use of the
- * Software or any product or circuit described in the Software. Cypress does
- * not authorize its products for use in any products where a malfunction or
- * failure of the Cypress product may reasonably be expected to result in
- * significant property damage, injury or death ("High Risk Product"). By
- * including Cypress's product in a High Risk Product, the manufacturer
- * of such system or application assumes all risk of such use and in doing
- * so agrees to indemnify Cypress against all liability.
- */
+/*******************************************************************************
+* Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
+*
+* This software, including source code, documentation and related
+* materials ("Software") is owned by Cypress Semiconductor Corporation
+* or one of its affiliates ("Cypress") and is protected by and subject to
+* worldwide patent protection (United States and foreign),
+* United States copyright laws and international treaty provisions.
+* Therefore, you may use this Software only as provided in the license
+* agreement accompanying the software package from which you
+* obtained this Software ("EULA").
+* If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
+* non-transferable license to copy, modify, and compile the Software
+* source code solely for use in connection with Cypress's
+* integrated circuit products.  Any reproduction, modification, translation,
+* compilation, or representation of this Software except as specified
+* above is prohibited without the express written permission of Cypress.
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
+* reserves the right to make changes to the Software without notice. Cypress
+* does not assume any liability arising out of the application or use of the
+* Software or any product or circuit described in the Software. Cypress does
+* not authorize its products for use in any products where a malfunction or
+* failure of the Cypress product may reasonably be expected to result in
+* significant property damage, injury or death ("High Risk Product"). By
+* including Cypress's product in a High Risk Product, the manufacturer
+* of such system or application assumes all risk of such use and in doing
+* so agrees to indemnify Cypress against all liability.
+*******************************************************************************/
 
-/** @file spi_master.c
+/*******************************************************************************
+ * @file spi_master.c
  *
  * @brief
  * sample application for SPI master
@@ -55,11 +56,10 @@
  *
  * CLK     WICED_P38    D13
  * MISO    WICED_P01    D12
- * MOSI    WICED_P04    D7
- * CS      WICED_P07    D10
+ * MOSI    WICED_P06    D08
+ * CS      WICED_P02    D06
  * GND
- *
- */
+ ******************************************************************************/
 
 /******************************************************************************
  *                                Includes
@@ -76,7 +76,7 @@
 #include "GeneratedSource/cycfg_pins.h"
 
 /******************************************************************************
- *                                Constants
+ *                                Macros
  ******************************************************************************/
 /* Threads defines */
 /* Sensible stack size for most threads*/
@@ -107,6 +107,10 @@
  * temperature data is divided by 100*/
 #define NORM_FACTOR                           (100)
 
+/* SPI Chip Select CS pin */
+#define SPI_CS                                WICED_P02
+
+#define SPI                                   SPI1
 
 /******************************************************************************
  *                                Structures
@@ -162,9 +166,12 @@ void           initialize_app( void );
 static void    spi_sensor_thread( uint32_t arg);
 void           spi_sensor_utility (data_packet *send_msg, data_packet *rec_msg);
 
-/**
- Function name:
- application_start
+/******************************************************************************
+ *                                Function Definitions
+ ******************************************************************************/
+
+/*******************************************************************************
+ Function name:  application_start
 
  Function Description:
  @brief    Starting point of your application. Entry point to the application.
@@ -175,21 +182,19 @@ void           spi_sensor_utility (data_packet *send_msg, data_packet *rec_msg);
  @param  void
 
  @return void
- */
+ ******************************************************************************/
 
-void application_start(void)
+APPLICATION_START()
 {
     wiced_set_debug_uart( WICED_ROUTE_DEBUG_TO_PUART );
     if(WICED_BT_SUCCESS != wiced_bt_stack_init( bt_cback, NULL, NULL ))
     {
-        WICED_BT_TRACE("BT stack initialization failed \n\r");
+        WICED_BT_TRACE("Bluetooth LE stack initialization failed \n\r");
     }
 }
 
-/**
- Function name:
- wiced_result_t bt_cback(wiced_bt_management_evt_t event,
-*                                  wiced_bt_management_evt_data_t *p_event_data)
+/*******************************************************************************
+ Function name: wiced_result_t bt_cback
 
  Function Description:
  @brief     This is a BlueTooth management event handler function to receive
@@ -199,7 +204,7 @@ void application_start(void)
  @param  *p_event_data  Pointer to BLE management event structures
 
  @return wiced_result_t  Error code from WICED_RESULT_LIST or BT_RESULT_LIST
- */
+ ******************************************************************************/
 
 wiced_result_t bt_cback( wiced_bt_management_evt_t event,
                          wiced_bt_management_evt_data_t *p_event_data )
@@ -223,20 +228,19 @@ wiced_result_t bt_cback( wiced_bt_management_evt_t event,
     return result;
 }
 
-/**
- Function name:
- initialize_app
+/*******************************************************************************
+ Function name: initialize_app
 
  Function Description:
  @brief    This functions initializes the SPI Slave
 
  @param void
  @return void
- */
+ ******************************************************************************/
 
 void initialize_app( void )
 {
-    wiced_hal_pspi_init(SPI1,
+    wiced_hal_pspi_init(SPI,
                         DEFAULT_FREQUENCY,
                         SPI_LSB_FIRST,
                         SPI_SS_ACTIVE_LOW,
@@ -259,9 +263,8 @@ void initialize_app( void )
 
 }
 
-/**
- Function name:
- spi_sensor_thread
+/*******************************************************************************
+ Function name:  spi_sensor_thread
 
  Function Description:
  @brief    Starts and maintains transfer of SPI sensor data.
@@ -269,7 +272,7 @@ void initialize_app( void )
  @param    arg  unused argument
 
  @return   none
- */
+ ******************************************************************************/
 
 void spi_sensor_thread(uint32_t arg )
 {
@@ -387,15 +390,14 @@ void spi_sensor_thread(uint32_t arg )
                data is interpreted correctly.*/
             curr_state = SENSOR_DETECT;
             num_retries = RESET_COUNT;
-            wiced_hal_pspi_reset(SPI1);
+            wiced_hal_pspi_reset(SPI);
         }
         wiced_rtos_delay_milliseconds(SLEEP_TIMEOUT, ALLOW_THREAD_TO_SLEEP);
     }
 }
 
-/**
- Function name:
- spi_sensor_utility
+/*******************************************************************************
+ Function name: spi_sensor_utility
 
  Function Description:
  @brief    function that performs SPI transactions with SPI sensor
@@ -404,32 +406,30 @@ void spi_sensor_thread(uint32_t arg )
 *@param   *rec_msg   pointer to the data packet that is received.
 
  @return void
- */
+ ******************************************************************************/
 
 void spi_sensor_utility(data_packet *send_msg,data_packet *rec_msg)
 {
     /* Chip select is set to LOW to select the slave for SPI transactions*/
-    wiced_hal_gpio_set_pin_output(SPI1_CS, GPIO_PIN_OUTPUT_LOW);
+    wiced_hal_gpio_set_pin_output(SPI_CS, GPIO_PIN_OUTPUT_LOW);
 
     WICED_BT_TRACE("Sending data to slave\n\r");
 
     /* Sending command to slave*/
-    wiced_hal_pspi_tx_data(SPI1,
+    wiced_hal_pspi_tx_data(SPI,
                            sizeof(*send_msg),
                            (uint8_t*)send_msg);
-
     /*Allowing slave time to fill its rx buffers before receiving*/
     wiced_rtos_delay_milliseconds(TX_RX_TIMEOUT,ALLOW_THREAD_TO_SLEEP);
 
     WICED_BT_TRACE("Receiving data from slave\n\r");
 
     /* Receving response from slave*/
-    wiced_hal_pspi_rx_data(SPI1,
+    wiced_hal_pspi_rx_data(SPI,
                            sizeof(*rec_msg),
                            (uint8_t*)rec_msg);
-
     /* Chip select is set to HIGH to unselect the slave for SPI transactions*/
-    wiced_hal_gpio_set_pin_output(SPI1_CS, GPIO_PIN_OUTPUT_HIGH);
+    wiced_hal_gpio_set_pin_output(SPI_CS, GPIO_PIN_OUTPUT_HIGH);
 
     return;
 }
