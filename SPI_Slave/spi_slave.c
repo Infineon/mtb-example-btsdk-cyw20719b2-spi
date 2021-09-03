@@ -55,7 +55,7 @@
  *
  * CLK     WICED_P38    D13
  * MISO    WICED_P01    D12
- * MOSI    WICED_P06    D08
+ * MOSI    WICED_P04    D07
  * CS      WICED_P02    D06
  * GND
  ******************************************************************************/
@@ -214,8 +214,6 @@ void initialize_app(void)
     uint8_t         retries             = RESET_COUNT;
     int16_t         thermistor_reading  = 0;
     WICED_BT_TRACE("Initializing Application\n\r");
-
-    wiced_hal_pspi_reset(SPI);
 
     /*Initialize SPI slave*/
     wiced_hal_pspi_init( SPI,

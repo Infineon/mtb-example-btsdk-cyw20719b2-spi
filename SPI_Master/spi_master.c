@@ -56,7 +56,7 @@
  *
  * CLK     WICED_P38    D13
  * MISO    WICED_P01    D12
- * MOSI    WICED_P06    D08
+ * MOSI    WICED_P04    D07
  * CS      WICED_P02    D06
  * GND
  ******************************************************************************/
